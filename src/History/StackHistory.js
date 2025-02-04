@@ -5,7 +5,7 @@ import DonationItem from "../Explore/DonationItem_page";
 const Stack = createStackNavigator();
 const StackHistory= () => {
     return (
-        <Stack.Navigator initialRouteName="Main">
+        <Stack.Navigator initialRouteName="Main" screenOptions={{headerShown:false}}>
           <Stack.Screen name="Main" component={HistoryPage}  />
           <Stack.Screen name="DonationItem" component={DonationItem}/>
         </Stack.Navigator>

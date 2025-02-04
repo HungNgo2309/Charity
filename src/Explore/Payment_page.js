@@ -2,9 +2,11 @@ import React, { useContext, useState } from "react";
 import { Image, KeyboardAvoidingView, Pressable, useWindowDimensions, View } from "react-native";
 import { Button, Checkbox, IconButton, Text, TextInput } from "react-native-paper";
 import { AuthenticatedUserContext } from "../Context/UserContext";
+import { useSelector } from "react-redux";
 
 const PaymentPage = ({route,navigation}) => {
-    const { user, setUser } = useContext(AuthenticatedUserContext);
+    //const { user, setUser } = useContext(AuthenticatedUserContext);
+    const { userInfo } = useSelector((state) => state.auth);
     const{id}=route.params;
     console.log(id);
     const [number, setNumber] = useState(0);
@@ -64,7 +66,7 @@ const PaymentPage = ({route,navigation}) => {
             </View>
             <View style={{position:"absolute",bottom:0,alignSelf:'center',width:layout.width}}>
                 <Pressable style={{margin:20,backgroundColor:'#FBB800',padding:15,borderRadius:15}} 
-                onPress={() => navigation.navigate('VNPAY',{money:money,content:content,id:id,username:user.email
+                onPress={() => navigation.navigate('VNPAY',{money:money,content:content,id:id,username:userInfo.email
                     ,anonymus:false
                 })}>
                     <Text style={{textAlign:'center'}}>Tiếp tục</Text>

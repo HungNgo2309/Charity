@@ -3,16 +3,20 @@ import React, { useContext, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { AuthenticatedUserContext } from "./Context/UserContext";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { updatePoint } from "./Redux/auth";
 const ThankYou=({route,navigation})=>{
     const {data,code}=route.params;
     const [post,setPost]=useState({});
-    const { user, setUser } = useContext(AuthenticatedUserContext);
+    //const { user, setUser } = useContext(AuthenticatedUserContext);
+    const { userInfo } = useSelector((state) => state.auth);
     useEffect(()=>{
       const LoadData = async () => {
         try {
-            const url = `http://192.168.23.160:8080/Post/${data.postID}`;
-            const response = await axios.get(url);
-            setPost(response.data);
+            const response =  await callApi('GET', `/Post/${data.postID}`);
+            //const url = `http://192.168.23.160:8080/Post/${data.postID}`;
+            //const response = await axios.get(url);
+            setPost(response);
              // in ra dữ liệu phản hồi
         } catch (error) {
             console.log(error);
@@ -20,6 +24,17 @@ const ThankYou=({route,navigation})=>{
     }; 
     LoadData()
     },[data.postID])
+    const dispatch = useDispatch();
+    useEffect(()=>{
+      const handleUpdatePoint = (point) => {
+        console.log(point)
+        const newPoint = parseInt(userInfo.point)+parseInt(point); 
+        console.log(newPoint)// Điểm mới bạn muốn cập nhật
+        dispatch(updatePoint(newPoint));
+        console.log(userInfo) // Gửi action cập nhật điểm
+      };
+      handleUpdatePoint(parseInt(data.amountMoney)/1000)
+    },[])
     console.log(post)
     return(
         <View style={styles.container}>
@@ -41,10 +56,6 @@ const ThankYou=({route,navigation})=>{
           post.title
         }
       </Text>
-      <Text style={styles.description}>
-        Support 40 orphans and disadvantaged children{'\n'}
-        affected by the Covid-19 pandemic
-      </Text>
 
       {/* Donation Information */}
       <View style={styles.donationInfo}>
@@ -58,7 +69,7 @@ const ThankYou=({route,navigation})=>{
         <View style={{flexDirection:'row',justifyContent:"space-between"}}>
             <View style={{alignItems:'center'}}>
             <Text style={styles.label}>Full Name:</Text>
-            <Text style={styles.value}>{user.userName}</Text>
+            <Text style={styles.value}>{userInfo.userName}</Text>
             </View>
             <View style={{alignItems:'center'}}>
             <Text style={styles.label}>Transaction Id:</Text>

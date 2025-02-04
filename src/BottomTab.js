@@ -1,32 +1,131 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-
+import React, { useEffect } from 'react';
 import { CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, BottomNavigation } from 'react-native-paper';
+import { BottomNavigation } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome6';
-import HomePage from './Home/Home_page';
 import StackEx from './Explore/Stack';
-import DetailDonation from './DetailDonation_page';
 import StackHome from './Home/StackHome';
-import ThankYou from './ThankYou';
-import HistoryPage from './History/History_page';
 import StackHistory from './History/StackHistory';
-import GiftMain from './Gift/GiftMain';
 import StackGift from './Gift/GiftStack';
+import StackNotifi from './Notification/StackNotifi';
+import messaging from '@react-native-firebase/messaging';
+import Toast from 'react-native-root-toast';
 
 const Tab = createBottomTabNavigator();
 
- const BottomTab=()=> {
+const BottomTab = ({ navigation }) => {
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      const title = remoteMessage.notification.title;
+      const body = remoteMessage.notification.body;
+      const toastMessage = `${title}\n${body}`;
+
+      const toast = Toast.show(toastMessage, {
+        duration: 15000,
+        position: Toast.positions.TOP,
+        shadow: true,
+        animation: true,
+        backgroundColor: 'green',
+        textColor: 'white',
+        opacity: 0.9,
+        containerStyle: {
+          width: 600,
+          alignSelf: 'center',
+          padding: 10,
+          borderRadius: 10,
+        },
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold',
+        },
+        onPress: () => {
+          Toast.hide(toast);
+          navigation.dispatch(
+            CommonActions.navigate({
+              name: 'BottomTab',
+              params: { screen: 'Notifications' },
+            })
+          );
+        },
+      });
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        if (remoteMessage) {
+          navigation.dispatch(
+            CommonActions.navigate({
+              name: 'BottomTab',
+              params: { screen: 'Notifications' },
+            })
+          );
+        }
+      });
+  }, [navigation]);
+
+  useEffect(() => {
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      navigation.dispatch(
+        CommonActions.navigate({
+          name: 'BottomTab',
+          params: { screen: 'Notifications' },
+        })
+      );
+    });
+  }, [navigation]);
+
+  const getInitialRouteForTab = (tabName) => {
+    switch (tabName) {
+      case 'Home':
+        return 'Main';
+      case 'Explore':
+        return 'Main';
+      case 'Historis':
+        return 'Main';
+      case 'Notifications':
+        return 'Main';
+      case 'Setting':
+        return 'Home';
+      default:
+        return null;
+    }
+  };
+
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-      }}
+        tabBarButton: (props) => {
+          const stackInitRoute = getInitialRouteForTab(route.name);
+          const isFocused = props.accessibilityState.selected;
+
+          return (
+            <TouchableOpacity
+              {...props}
+              onPress={() => {
+                if (isFocused && stackInitRoute) {
+                  navigation.dispatch({
+                    ...CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: stackInitRoute }],
+                    }),
+                  });
+                } else {
+                  props.onPress();
+                }
+              }}
+            />
+          );
+        },
+      })}
       tabBar={({ navigation, state, descriptors, insets }) => (
         <BottomNavigation.Bar
           navigationState={state}
-         safeAreaInsets={insets}
+          safeAreaInsets={insets}
           onTabPress={({ route, preventDefault }) => {
             const event = navigation.emit({
               type: 'tabPress',
@@ -37,7 +136,7 @@ const Tab = createBottomTabNavigator();
             if (event.defaultPrevented) {
               preventDefault();
             } else {
-             navigation.dispatch({
+              navigation.dispatch({
                 ...CommonActions.navigate(route.name, route.params),
                 target: state.key,
               });
@@ -48,19 +147,11 @@ const Tab = createBottomTabNavigator();
             if (options.tabBarIcon) {
               return options.tabBarIcon({ focused, color, size: 24 });
             }
-
             return null;
           }}
           getLabelText={({ route }) => {
             const { options } = descriptors[route.key];
-            const label =
-              options.tabBarLabel !== undefined
-                ? options.tabBarLabel
-                : options.title !== undefined
-                ? options.title
-                : route.title;
-
-            return label;
+            return options.tabBarLabel ?? options.title ?? route.title;
           }}
         />
       )}
@@ -70,9 +161,7 @@ const Tab = createBottomTabNavigator();
         component={StackHome}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => {
-            return <Icon name="house" size={size} color={color} />;
-          },
+          tabBarIcon: ({ color, size }) => <Icon name="house" size={size} color={color} />,
         }}
       />
       <Tab.Screen
@@ -80,9 +169,7 @@ const Tab = createBottomTabNavigator();
         component={StackEx}
         options={{
           tabBarLabel: 'Explore',
-          tabBarIcon: ({ color, size }) => {
-            return <Icon name="searchengin" size={size} color={color} />;
-          },
+          tabBarIcon: ({ color, size }) => <Icon name="earth-americas" size={size} color={color} />,
         }}
       />
       <Tab.Screen
@@ -90,31 +177,27 @@ const Tab = createBottomTabNavigator();
         component={StackHistory}
         options={{
           tabBarLabel: 'History',
-          tabBarIcon: ({ color, size }) => {
-            return <Icon name="clock-rotate-left" size={size} color={color} />;
-          },
+          tabBarIcon: ({ color, size }) => <Icon name="clock-rotate-left" size={size} color={color} />,
         }}
       />
       <Tab.Screen
-        name="Gift"
+        name="Notifications"
+        component={StackNotifi}
+        options={{
+          tabBarLabel: 'Notifications',
+          tabBarIcon: ({ color, size }) => <Icon name="bell" size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Setting"
         component={StackGift}
         options={{
-          tabBarLabel: 'Gift',
-          tabBarIcon: ({ color, size }) => {
-            return <Icon name="gift" size={size} color={color} />;
-          },
+          tabBarLabel: 'Setting',
+          tabBarIcon: ({ color, size }) => <Icon name="gear" size={size} color={color} />,
         }}
       />
     </Tab.Navigator>
   );
-}
+};
 
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 export default BottomTab;
